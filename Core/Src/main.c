@@ -65,8 +65,19 @@ static volatile uint8_t processing_flag = 0;
 //static uint32_t debug_counter = 0; /* デバッグ用カウンター */
 //static uint32_t rx_process_counter = 0; /* 受信処理カウンター */
 static uint32_t last_can_any_rx_tick = 0;   // 任意のCANメッセージ受信時刻
-const int my_can_ids[NUM_MY_IDS] = {1};  // 標準ID 0x001
+int my_can_ids[NUM_MY_IDS] = {1};  // 標準ID 0x001
+int decimal;
+void select_ID(){
+	GPIO_PinState state_A = HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_1);
+	GPIO_PinState state_B = HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_0);
+	GPIO_PinState state_C = HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_0);
+	bool A = !state_A;
+	bool B = !state_B;
+	bool C = !state_C;
 
+	decimal = (A << 2) | (B << 1) | (C << 0);
+	my_can_ids[0] = decimal + 320;
+}
 bool is_my_can_id(uint32_t id) {
     for (int i = 0; i < NUM_MY_IDS; i++) {
         if (my_can_ids[i] == id) {
@@ -229,6 +240,7 @@ int main(void)
   MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
   HAL_GPIO_WritePin(GPIOB, GPIO_PIN_6 | GPIO_PIN_7, GPIO_PIN_RESET);
+  select_ID();
   // フィルタ（全受信に変更）
   CAN_FilterTypeDef sFilterConfig = {0};
   sFilterConfig.FilterBank = 0;
@@ -246,6 +258,7 @@ int main(void)
   sFilterConfig.FilterFIFOAssignment = CAN_RX_FIFO0;
   sFilterConfig.FilterActivation = ENABLE;
   sFilterConfig.SlaveStartFilterBank = 14;
+
 
   HAL_CAN_ConfigFilter(&hcan, &sFilterConfig);
 
